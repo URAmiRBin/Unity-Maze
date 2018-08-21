@@ -21,6 +21,7 @@ enum States {
 public class box : MonoBehaviour {
 	/*======================== VARIABLES ===========================*/
 	// UI Elements
+		public 	Text 		WinLose;
 		public 	Text 		HudHeart;
 		public 	Image 		Logo;
 		public 	GameObject 	MenuButtons;
@@ -57,7 +58,7 @@ public class box : MonoBehaviour {
 		// First Things First
 		GameOverMenuButtons.gameObject.SetActive (false);
 		HudHeart.text = heart + " " + heart + " " + heart;
-
+		WinLose.text = "";
 		r = gameObject.GetComponent<Rigidbody> ();
 
 		// Camera
@@ -76,6 +77,7 @@ public class box : MonoBehaviour {
 	void Update () {
 		switch (state) {
 			case States.FirstMenu:
+				WinLose.gameObject.SetActive(false);
 				HudHeart.gameObject.SetActive (false);
 				MenuButtons.gameObject.SetActive (true);
 				Logo.gameObject.SetActive (true);
@@ -87,12 +89,20 @@ public class box : MonoBehaviour {
 				MoveCameratoPlay ();
 				break;
 			case States.Lose:
+				WinLose.color = Color.red;
+				WinLose.text = "YOU LOST BLYAT";
 				state = States.GameOverMenu;
 				break;
 			case States.GameOverMenu:
 				HudHeart.gameObject.SetActive (false);
 				GameOverMenuButtons.gameObject.SetActive (true);
 				Logo.gameObject.SetActive (true);
+				break;
+			case States.Win:
+				WinLose.gameObject.SetActive(true);
+				WinLose.color = Color.green;
+				WinLose.text = "YOU WON BLYAT";
+				state = States.GameOverMenu;
 				break;
 		}
 	}
@@ -105,7 +115,17 @@ public class box : MonoBehaviour {
 		controlKeys ();
 		controlCamera ();
 		failCheck ();
+		winCheck();
 	}
+
+	private void winCheck()
+	{
+		if (gameObject.transform.position.z > 1.5) {
+			gameObject.transform.position = DefaultPosition;
+			r.velocity = Vector3.zero;
+			state = States.Win;
+		}
+	} 
 
 	private void failCheck() {
 		if (gameObject.transform.position.y < -20) {
@@ -167,6 +187,7 @@ public class box : MonoBehaviour {
 	}
 
 	public void RetryMenu() {
+		WinLose.gameObject.SetActive(false);
 		GameOverMenuButtons.gameObject.SetActive (false);
 		HudHeart.gameObject.SetActive (true);
 		Logo.gameObject.SetActive (false);
