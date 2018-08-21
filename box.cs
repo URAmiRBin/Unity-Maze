@@ -43,6 +43,7 @@ public class box : MonoBehaviour {
 		Rigidbody 			r;
 
 	// Default Values
+	private Scrollbar s;
 		Vector3 	DefaultPosition;
 		Vector3 	ThirdPCamera 			= new Vector3(2.88f, 9.45f, -.9f);
 		Vector3 	MenuCamera 				= new Vector3 (7.99f, -1, -4.60f);
@@ -89,6 +90,7 @@ public class box : MonoBehaviour {
 				MoveCameratoPlay ();
 				break;
 			case States.Lose:
+				WinLose.gameObject.SetActive(true);
 				WinLose.color = Color.red;
 				WinLose.text = "YOU LOST BLYAT";
 				state = States.GameOverMenu;
@@ -138,10 +140,13 @@ public class box : MonoBehaviour {
 		}
 		if (hearts == 0) {
 			state = States.Lose;
+			Debug.Log("LOSE");
 		}
 	}
 
-	private void printHearts(int number){
+	private void printHearts(int number)
+	{
+		HudHeart.text = "";
 		for(int i = 0; i < number; i++){
 			HudHeart.text += heart + " ";
 		}
@@ -158,6 +163,7 @@ public class box : MonoBehaviour {
 	}
 
 	private void controlCamera() {
+		TheLight.transform.position = gameObject.transform.position + LightOffset;
 		if (viewMode == ViewMode.fp) {
 			Camera.main.transform.position = gameObject.transform.position + Cameraoffset;
 		}
