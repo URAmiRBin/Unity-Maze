@@ -4,44 +4,60 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public enum ViewMode {
-	fp, tp, td,
+	fp, 
+	tp, 
+	td,
 }
 
-enum State {
-	FirstMenu, GameOverMenu, Game, Win,
+enum States {
+	FirstMenu, 
+	GameOverMenu, 
+	Game, 
+	Win, 
+	MovingCamera, 
+	Lose,
 }
 
 public class box : MonoBehaviour {
+	/*======================== VARIABLES ===========================*/
 	// UI Elements
-		public Text HudHeart;
-		public Image Logo;
+		public 	Text 		HudHeart;
+		public 	Image 		Logo;
+		public 	GameObject 	MenuButtons;
+		public 	GameObject 	GameOverMenuButtons;
+
 	// Code Variables
-		int count = 0;
-		bool isMenu = true;
-		int hearts = 3;
-		string heart = "❤";
-		bool isMovingCamera = false;
-		ViewMode viewMode;
-		Vector3 Cameraoffset;
-		Vector3 LightOffset;
+		bool 		isMovingCamera 	= false;
+		int 		count  			= 0;
+		bool 		isMenu 			= true;
+		int 		hearts 			= 3;
+		string 		heart  			= "❤";
+		ViewMode 	viewMode;
+		Vector3 	Cameraoffset;
+		Vector3 	LightOffset;
+		States 		state;
+
 	// Game Objects
-		public GameObject MenuButtons;
-		public GameObject GameOverMenuButtons;
-		public Light TheLight;
-		Rigidbody r;
+		public 	Light 		TheLight;
+		Rigidbody 			r;
+
 	// Default Values
-		Vector3 DefaultPosition;
-		Vector3 ThirdPCamera = new Vector3(2.88f, 9.45f, -.9f);
-		Vector3 MenuCamera = new Vector3 (7.99f, -1, -4.60f);
-		Vector3 FirstPCamera = new Vector3 ( 7.9f, 3.42f, -3.83f);
-		Quaternion UpdownCamera = Quaternion.Euler (90, 0, 0);
-		Vector3 ThreeDCamera = new Vector3 (-2.61f, 11.2f, -4.87f);
-		Quaternion ThreeDCameraRotation = Quaternion.Euler (120, -145, -180);
+		Vector3 	DefaultPosition;
+		Vector3 	ThirdPCamera 			= new Vector3(2.88f, 9.45f, -.9f);
+		Vector3 	MenuCamera 				= new Vector3 (7.99f, -1, -4.60f);
+		Vector3 	FirstPCamera 			= new Vector3 ( 7.9f, 3.42f, -3.83f);
+		Quaternion 	UpdownCamera 			= Quaternion.Euler (90, 0, 0);
+		Vector3 	ThreeDCamera 			= new Vector3 (-2.61f, 11.2f, -4.87f);
+		Quaternion 	ThreeDCameraRotation 	= Quaternion.Euler (120, -145, -180);
+
+
+	/*============================ START =========================*/
 	// Use this for initialization
 	void Start () {
 		// First Things First
 		GameOverMenuButtons.gameObject.SetActive (false);
 		HudHeart.text = heart + " " + heart + " " + heart;
+
 		r = gameObject.GetComponent<Rigidbody> ();
 
 		// Camera
@@ -52,98 +68,121 @@ public class box : MonoBehaviour {
 		LightOffset = TheLight.transform.position - DefaultPosition;
 
 		// Set State
-
+		state = States.FirstMenu;
 	}
-		
+
+	/*======================== UPDATE ============================*/
 	// Update is called once per frame
 	void Update () {
-		if (isMenu) {
-			if (hearts == 0) {
-				GameOverMenuButtons.gameObject.SetActive (true);
-				MenuButtons.gameObject.SetActive (false);
-			}
-			else if (isMovingCamera) {
-				MoveCameratoPlay ();
-				MenuButtons.gameObject.SetActive (!true);
-			} else if ((!isMovingCamera)) {
+		switch (state) {
+			case States.FirstMenu:
 				HudHeart.gameObject.SetActive (false);
 				MenuButtons.gameObject.SetActive (true);
-			}
-		} else {
-			if (gameObject.transform.position.y < -20) {
-				gameObject.transform.position = DefaultPosition;
-				r.velocity = Vector3.zero;
-				hearts--;
-				HudHeart.text = "";
-				for(int i = 0; i < hearts; i++){
-					HudHeart.text += heart + " ";
-				}
-				Debug.Log ("Failed");
-			}
-			if (gameObject.transform.position.z > 1.5) {
-				gameObject.transform.position = DefaultPosition;
-				r.velocity = Vector3.zero;
-				Debug.Log ("Win");
-			}
+				Logo.gameObject.SetActive (true);
+				break;
+			case States.Game:
+				playGame ();
+				break;
+			case States.MovingCamera:
+				MoveCameratoPlay ();
+				break;
+			case States.Lose:
+				state = States.GameOverMenu;
+				break;
+			case States.GameOverMenu:
+				HudHeart.gameObject.SetActive (false);
+				GameOverMenuButtons.gameObject.SetActive (true);
+				Logo.gameObject.SetActive (true);
+				break;
+		}
+	}
 
-			if (hearts == 0) {
-				isMenu = true;
-				Camera.main.transform.position = MenuCamera;
-			}
 
-			if (Input.GetKey (KeyCode.W)) {
-				r.velocity = Vector3.forward * 5;
-			}
-			if (Input.GetKey (KeyCode.S)) {
-				r.velocity = Vector3.forward * -5;
-			}
-			if (Input.GetKey (KeyCode.D)) {
-				r.velocity = Vector3.right * 5;
-			}
-			if (Input.GetKey (KeyCode.A)) {
-				r.velocity = Vector3.right * -5;
-			}
+	/*========================== METHODS =============================*/
+	private void playGame() {
+		HudHeart.gameObject.SetActive (true);
 
-			if (Input.GetKeyDown (KeyCode.V)) {
-				if (viewMode == ViewMode.tp) {
-					Camera.main.transform.position = FirstPCamera;
-					Camera.main.transform.rotation = UpdownCamera;
-					viewMode = ViewMode.fp;
-				} else if (viewMode == ViewMode.fp) {
-					Camera.main.transform.position = ThirdPCamera;
-					Camera.main.transform.rotation = UpdownCamera;
-					viewMode = ViewMode.td;
-				} else if (viewMode == ViewMode.td) {
-					Camera.main.transform.position = ThreeDCamera;
-					Camera.main.transform.rotation = ThreeDCameraRotation;
-					viewMode = ViewMode.tp;
-				}
+		controlKeys ();
+		controlCamera ();
+		failCheck ();
+	}
+
+	private void failCheck() {
+		if (gameObject.transform.position.y < -20) {
+			gameObject.transform.position = DefaultPosition;
+			r.velocity = Vector3.zero;
+			hearts--;
+			HudHeart.text = "";
+			printHearts (hearts);
+			Debug.Log ("Failed");
+		}
+		if (hearts == 0) {
+			state = States.Lose;
+		}
+	}
+
+	private void printHearts(int number){
+		for(int i = 0; i < number; i++){
+			HudHeart.text += heart + " ";
+		}
+		if (hearts == 1) {
+			HudHeart.color = Color.red;
+		}
+	}
+
+	private void controlKeys() {
+		if (Input.GetKey (KeyCode.W)) 	{ r.velocity = Vector3.forward * 5; }
+		if (Input.GetKey (KeyCode.S)) 	{ r.velocity = Vector3.forward * -5; }
+		if (Input.GetKey (KeyCode.D)) 	{ r.velocity = Vector3.right   * 5; }
+		if (Input.GetKey (KeyCode.A)) 	{ r.velocity = Vector3.right   * -5; }
+	}
+
+	private void controlCamera() {
+		if (viewMode == ViewMode.fp) {
+			Camera.main.transform.position = gameObject.transform.position + Cameraoffset;
+		}
+
+		if (Input.GetKeyDown (KeyCode.V)) {
+			if (viewMode == ViewMode.tp) {
+				Camera.main.transform.position = FirstPCamera;
+				Camera.main.transform.rotation = UpdownCamera;
+				viewMode = ViewMode.fp;
+			} else if (viewMode == ViewMode.fp) {
+				Camera.main.transform.position = ThirdPCamera;
+				Camera.main.transform.rotation = UpdownCamera;
+				viewMode = ViewMode.td;
+			} else if (viewMode == ViewMode.td) {
+				Camera.main.transform.position = ThreeDCamera;
+				Camera.main.transform.rotation = ThreeDCameraRotation;
+				viewMode = ViewMode.tp;
 			}
-
-			if (viewMode == ViewMode.fp) {
-				Camera.main.transform.position = gameObject.transform.position + Cameraoffset;
-			}
-
-			TheLight.transform.position = gameObject.transform.position + LightOffset;
-
 		}
 	}
 
 
 	public void PlayMenu() {
+		MenuButtons.gameObject.SetActive (false);
 		Logo.gameObject.SetActive (false);
-		MoveCameratoPlay ();
+		state = States.MovingCamera;
 	}
 
-	void MoveCameratoPlay() {
+	public void RetryMenu() {
+		GameOverMenuButtons.gameObject.SetActive (false);
+		HudHeart.gameObject.SetActive (true);
+		Logo.gameObject.SetActive (false);
+		gameObject.transform.position = DefaultPosition;
+		HudHeart.color = Color.green;
+		hearts = 3;
+		printHearts (hearts);
+		state = States.Game;
+	}
+
+	private void MoveCameratoPlay() {
 		if (count++ < 60) {
 			Camera.main.transform.position += (ThirdPCamera - MenuCamera) / 60;
-			isMovingCamera = true;
 		} else {
 			count = 0;
-			HudHeart.gameObject.SetActive (!false);
-			isMovingCamera = false;
-			isMenu = false;
+			state = States.Game;
 		}
 	}
 }
