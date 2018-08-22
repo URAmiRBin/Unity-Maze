@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -22,6 +25,9 @@ enum States {
 public class box : MonoBehaviour {
 	/*======================== VARIABLES ===========================*/
 	// UI Elements
+		public	Text 		Records;
+		public	Text 		Score;
+		public	Text 		BestScoreTitle;
 		public 	Text 		WinLose;
 		public 	Text 		TimerTitle;
 		public 	Text		HeartsTitle;
@@ -32,6 +38,7 @@ public class box : MonoBehaviour {
 		public 	GameObject 	GameOverMenuButtons;
 		
 	// Code Variables
+		private 	int 			number;
 		bool 		isMovingCamera 	= false;
 		int 		count  			= 0;
 		bool 		isMenu 			= true;
@@ -42,7 +49,7 @@ public class box : MonoBehaviour {
 		Vector3 	Cameraoffset;
 		Vector3 	LightOffset;
 		private 	States state;
-
+		private Dictionary<int, float> scores = new Dictionary<int, float>();
 	// Game Objects
 		public 	Light 		TheLight;
 		Rigidbody 			r;
@@ -60,7 +67,9 @@ public class box : MonoBehaviour {
 
 	/*============================ START =========================*/
 	// Use this for initialization
-	void Start () {
+	void Start ()
+	{
+		number = 0;
 		// First Things First
 		GameOverMenuButtons.gameObject.SetActive (false);
 		HudHeart.text = heart + " " + heart + " " + heart;
@@ -83,11 +92,10 @@ public class box : MonoBehaviour {
 	void Update () {
 		switch (state) {
 			case States.FirstMenu:
+				
+				Records.gameObject.SetActive(false);
 				WinLose.gameObject.SetActive(false);
-				HudHeart.gameObject.SetActive (false);
-				Timer.gameObject.SetActive(false);
-				HeartsTitle.gameObject.SetActive(false);
-				TimerTitle.gameObject.SetActive(false);
+				ShowHud(false);
 				MenuButtons.gameObject.SetActive (true);
 				Logo.gameObject.SetActive (true);
 				break;
@@ -99,6 +107,7 @@ public class box : MonoBehaviour {
 				break;
 			case States.Lose:
 				WinLose.gameObject.SetActive(true);
+				ShowHud(false);
 				WinLose.color = Color.red;
 				WinLose.text = "YOU LOST BLYAT";
 				state = States.GameOverMenu;
@@ -112,6 +121,7 @@ public class box : MonoBehaviour {
 				Logo.gameObject.SetActive (true);
 				break;
 			case States.Win:
+				ShowHud(false);
 				WinLose.gameObject.SetActive(true);
 				WinLose.color = Color.green;
 				WinLose.text = "YOU WON BLYAT";
@@ -132,8 +142,36 @@ public class box : MonoBehaviour {
 		winCheck();
 	}
 
+
+	private void countBest()
+	{
+		float best = 10000;
+		for (int i = 0; i < scores.Count; i++)
+		{
+			var item = scores.ElementAt(i);
+			if (item.Value != 0)
+			{
+				if (item.Value < best)
+				{
+					best = item.Value;
+				}
+			}
+		}
+
+		if (best == 10000)
+		{
+			Score.text = "-";
+		}
+		else
+		{
+			Score.text = best.ToString("0.0") + " Seconds";
+		}
+	}
+	
 	private void ShowHud(bool show)
 	{
+		Score.gameObject.SetActive(show);
+		BestScoreTitle.gameObject.SetActive(show);
 		HudHeart.gameObject.SetActive (show);
 		HeartsTitle.gameObject.SetActive(show);
 		TimerTitle.gameObject.SetActive(show);
@@ -151,6 +189,8 @@ public class box : MonoBehaviour {
 			gameObject.transform.position = DefaultPosition;
 			r.velocity = Vector3.zero;
 			state = States.Win;
+			scores.Add(number++, Time.time - StartTime);
+			countBest();
 		}
 	} 
 
@@ -165,6 +205,7 @@ public class box : MonoBehaviour {
 		}
 		if (hearts == 0) {
 			state = States.Lose;
+			scores.Add(number++, 0);
 			Debug.Log("LOSE");
 		}
 	}
@@ -211,6 +252,30 @@ public class box : MonoBehaviour {
 	}
 
 
+	public void ScoresMenu()
+	{
+		ShowHud(false);
+		string WL;
+		Records.gameObject.SetActive(true);
+		Records.text = "";
+		for(int i = scores.Count-1; i >= 0; i--)
+		{
+			var item = scores.ElementAt(i);
+			if (item.Value == 0)
+			{
+				WL = "LOSE";
+			}
+			else
+			{
+				WL = "WIN ";
+			}
+			
+			Records.text += "#" + (scores.Count - i) + " 	|	" + WL + "|		" + item.Value.ToString("0.0") + "\n";
+		}
+	}
+
+
+	
 	public void PlayMenu() {
 		MenuButtons.gameObject.SetActive (false);
 		Logo.gameObject.SetActive (false);
@@ -218,6 +283,7 @@ public class box : MonoBehaviour {
 	}
 
 	public void RetryMenu() {
+		Records.gameObject.SetActive(false);
 		WinLose.gameObject.SetActive(false);
 		GameOverMenuButtons.gameObject.SetActive (false);
 		ShowHud(true);
