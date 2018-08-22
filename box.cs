@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -22,21 +23,25 @@ public class box : MonoBehaviour {
 	/*======================== VARIABLES ===========================*/
 	// UI Elements
 		public 	Text 		WinLose;
+		public 	Text 		TimerTitle;
+		public 	Text		HeartsTitle;
 		public 	Text 		HudHeart;
+		public 	Text 		Timer;
 		public 	Image 		Logo;
 		public 	GameObject 	MenuButtons;
 		public 	GameObject 	GameOverMenuButtons;
-
+		
 	// Code Variables
 		bool 		isMovingCamera 	= false;
 		int 		count  			= 0;
 		bool 		isMenu 			= true;
 		int 		hearts 			= 3;
 		string 		heart  			= "❤";
+		float 		StartTime;
 		ViewMode 	viewMode;
 		Vector3 	Cameraoffset;
 		Vector3 	LightOffset;
-		States 		state;
+		private 	States state;
 
 	// Game Objects
 		public 	Light 		TheLight;
@@ -45,7 +50,7 @@ public class box : MonoBehaviour {
 	// Default Values
 	private Scrollbar s;
 		Vector3 	DefaultPosition;
-		Vector3 	ThirdPCamera 			= new Vector3(2.88f, 9.45f, -.9f);
+		Vector3 	ThirdPCamera 			= new Vector3(4f, 9.45f, -.9f);
 		Vector3 	MenuCamera 				= new Vector3 (7.99f, -1, -4.60f);
 		Vector3 	FirstPCamera 			= new Vector3 ( 7.9f, 3.42f, -3.83f);
 		Quaternion 	UpdownCamera 			= Quaternion.Euler (90, 0, 0);
@@ -61,7 +66,7 @@ public class box : MonoBehaviour {
 		HudHeart.text = heart + " " + heart + " " + heart;
 		WinLose.text = "";
 		r = gameObject.GetComponent<Rigidbody> ();
-
+		Timer.text = "0.0";
 		// Camera
 		Camera.main.transform.position = MenuCamera;
 		DefaultPosition = new Vector3(gameObject.transform.position.x,gameObject.transform.position.y,gameObject.transform.position.z);
@@ -80,6 +85,9 @@ public class box : MonoBehaviour {
 			case States.FirstMenu:
 				WinLose.gameObject.SetActive(false);
 				HudHeart.gameObject.SetActive (false);
+				Timer.gameObject.SetActive(false);
+				HeartsTitle.gameObject.SetActive(false);
+				TimerTitle.gameObject.SetActive(false);
 				MenuButtons.gameObject.SetActive (true);
 				Logo.gameObject.SetActive (true);
 				break;
@@ -97,6 +105,9 @@ public class box : MonoBehaviour {
 				break;
 			case States.GameOverMenu:
 				HudHeart.gameObject.SetActive (false);
+				HeartsTitle.gameObject.SetActive(false);
+				TimerTitle.gameObject.SetActive(false);
+				Timer.gameObject.SetActive(false);
 				GameOverMenuButtons.gameObject.SetActive (true);
 				Logo.gameObject.SetActive (true);
 				break;
@@ -111,15 +122,29 @@ public class box : MonoBehaviour {
 
 
 	/*========================== METHODS =============================*/
-	private void playGame() {
-		HudHeart.gameObject.SetActive (true);
-
-		controlKeys ();
+	private void playGame()
+	{
+		ShowHud(true);
+		CountTime();
+		ControlKeys ();
 		controlCamera ();
 		failCheck ();
 		winCheck();
 	}
 
+	private void ShowHud(bool show)
+	{
+		HudHeart.gameObject.SetActive (show);
+		HeartsTitle.gameObject.SetActive(show);
+		TimerTitle.gameObject.SetActive(show);
+		Timer.gameObject.SetActive(show);	
+	}
+	
+	private void CountTime()
+	{
+		Timer.text = (Time.time - StartTime).ToString("0.0");
+	}
+	
 	private void winCheck()
 	{
 		if (gameObject.transform.position.z > 1.5) {
@@ -155,7 +180,7 @@ public class box : MonoBehaviour {
 		}
 	}
 
-	private void controlKeys() {
+	private void ControlKeys() {
 		if (Input.GetKey (KeyCode.W)) 	{ r.velocity = Vector3.forward * 5; }
 		if (Input.GetKey (KeyCode.S)) 	{ r.velocity = Vector3.forward * -5; }
 		if (Input.GetKey (KeyCode.D)) 	{ r.velocity = Vector3.right   * 5; }
@@ -195,12 +220,13 @@ public class box : MonoBehaviour {
 	public void RetryMenu() {
 		WinLose.gameObject.SetActive(false);
 		GameOverMenuButtons.gameObject.SetActive (false);
-		HudHeart.gameObject.SetActive (true);
+		ShowHud(true);
 		Logo.gameObject.SetActive (false);
 		gameObject.transform.position = DefaultPosition;
 		HudHeart.color = Color.green;
 		hearts = 3;
 		printHearts (hearts);
+		StartTime = Time.time;
 		state = States.Game;
 	}
 
@@ -209,6 +235,7 @@ public class box : MonoBehaviour {
 			Camera.main.transform.position += (ThirdPCamera - MenuCamera) / 60;
 		} else {
 			count = 0;
+			StartTime = Time.time;
 			state = States.Game;
 		}
 	}
