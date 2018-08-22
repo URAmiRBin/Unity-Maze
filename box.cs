@@ -7,25 +7,15 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UI;
 
-public enum ViewMode {
-	fp, 
-	tp, 
-	td,
-}
-
-enum States {
-	FirstMenu, 
-	GameOverMenu, 
-	Game, 
-	Win, 
-	MovingCamera, 
-	Lose,
-}
+enum ViewMode 	{ fp, tp, td, }
+enum States 	{ FirstMenu, GameOverMenu, Game, Win, MovingCamera, Lose, Options }
 
 public class box : MonoBehaviour {
 	/*======================== VARIABLES ===========================*/
 	// UI Elements
 		public	Text 		Records;
+		public	Text 		GroundColorText;
+		public	Text 		BallColorText;
 		public	Text 		Score;
 		public	Text 		BestScoreTitle;
 		public 	Text 		WinLose;
@@ -35,27 +25,34 @@ public class box : MonoBehaviour {
 		public 	Text 		Timer;
 		public 	Image 		Logo;
 		public 	GameObject 	MenuButtons;
+		public	GameObject	Ground;
 		public 	GameObject 	GameOverMenuButtons;
-		
+		public 	Dropdown 	BallColorDD;
+		public 	Dropdown 	GroundColorDD;
+		public 	Toggle 		LightToggle;
+		public 	Button		Back;
+
 	// Code Variables
-		private 	int 			number;
-		bool 		isMovingCamera 	= false;
-		int 		count  			= 0;
-		bool 		isMenu 			= true;
-		int 		hearts 			= 3;
-		string 		heart  			= "❤";
-		float 		StartTime;
-		ViewMode 	viewMode;
-		Vector3 	Cameraoffset;
-		Vector3 	LightOffset;
-		private 	States state;
+		private 	bool 		isMovingCamera 	= false;
+		private 	int 		count  			= 0;
+		private 	bool 		isMenu 			= true;
+		private 	int 		hearts 			= 3;
+		private 	string 		heart  			= "❤";
+		private 	float 		StartTime;
+		private 	ViewMode 	viewMode;
+		private 	Vector3 	Cameraoffset;
+		private 	Vector3 	LightOffset;
+		private 	int 		number;
+		private 	States 		state;
+		private 	States 		preState;
+		private		Material 	m;
+		private 	Material 	n;
 		private Dictionary<int, float> scores = new Dictionary<int, float>();
 	// Game Objects
 		public 	Light 		TheLight;
 		Rigidbody 			r;
 
 	// Default Values
-	private Scrollbar s;
 		Vector3 	DefaultPosition;
 		Vector3 	ThirdPCamera 			= new Vector3(4f, 9.45f, -.9f);
 		Vector3 	MenuCamera 				= new Vector3 (7.99f, -1, -4.60f);
@@ -69,7 +66,12 @@ public class box : MonoBehaviour {
 	// Use this for initialization
 	void Start ()
 	{
+		LightToggle.gameObject.GetComponent<Toggle>();
 		number = 0;
+		m = gameObject.GetComponent<Renderer>().material;
+		n = Ground.gameObject.GetComponent<Renderer>().material;
+		n.color = Color.black;
+		m.color = Color.red;
 		// First Things First
 		GameOverMenuButtons.gameObject.SetActive (false);
 		HudHeart.text = heart + " " + heart + " " + heart;
@@ -92,7 +94,7 @@ public class box : MonoBehaviour {
 	void Update () {
 		switch (state) {
 			case States.FirstMenu:
-				
+				showOptions(false);
 				Records.gameObject.SetActive(false);
 				WinLose.gameObject.SetActive(false);
 				ShowHud(false);
@@ -127,6 +129,13 @@ public class box : MonoBehaviour {
 				WinLose.text = "YOU WON BLYAT";
 				state = States.GameOverMenu;
 				break;
+			case States.Options:
+				MenuButtons.gameObject.SetActive(false);
+				GameOverMenuButtons.gameObject.SetActive(false);
+				BallColorDD.gameObject.SetActive(true);
+				GroundColorDD.gameObject.SetActive(true);
+				DropDownIO();
+				break;
 		}
 	}
 
@@ -142,7 +151,43 @@ public class box : MonoBehaviour {
 		winCheck();
 	}
 
+	private void DropDownIO()
+	{
+		if (BallColorDD.value == 0){ m.color = Color.red; }
+		else if (BallColorDD.value == 1){ m.color = Color.blue; }
+		else if (BallColorDD.value == 2){ m.color = Color.yellow; }
+		
+		if (GroundColorDD.value == 0){ n.color = Color.black; }
+		else if (GroundColorDD.value == 1){ n.color = Color.white; }
+		else if (GroundColorDD.value == 2){ n.color = Color.green; }
 
+		LightToggle.onValueChanged.AddListener(delegate { dothelight();});
+
+	}
+
+	private void dothelight()
+	{
+		if (LightToggle.isOn)
+		{
+			TheLight.gameObject.SetActive(true);
+		}
+		else
+		{
+			TheLight.gameObject.SetActive(false);
+		}
+	}
+
+	private void showOptions(bool show)
+	{
+		BallColorDD.gameObject.SetActive(show);
+		GroundColorDD.gameObject.SetActive(show);
+		LightToggle.gameObject.SetActive(show);
+		Back.gameObject.SetActive(show);
+		BallColorText.gameObject.SetActive(show);
+		GroundColorText.gameObject.SetActive(show);
+
+	}
+	
 	private void countBest()
 	{
 		float best = 10000;
@@ -158,14 +203,8 @@ public class box : MonoBehaviour {
 			}
 		}
 
-		if (best == 10000)
-		{
-			Score.text = "-";
-		}
-		else
-		{
-			Score.text = best.ToString("0.0") + " Seconds";
-		}
+		if (best == 10000) { Score.text = "-"; }
+		else { Score.text = best.ToString("0.0") + " Seconds"; }
 	}
 	
 	private void ShowHud(bool show)
@@ -250,6 +289,16 @@ public class box : MonoBehaviour {
 			}
 		}
 	}
+	
+	private void MoveCameratoPlay() {
+		if (count++ < 60) {
+			Camera.main.transform.position += (ThirdPCamera - MenuCamera) / 60;
+		} else {
+			count = 0;
+			StartTime = Time.time;
+			state = States.Game;
+		}
+	}
 
 
 	public void ScoresMenu()
@@ -257,7 +306,7 @@ public class box : MonoBehaviour {
 		ShowHud(false);
 		string WL;
 		Records.gameObject.SetActive(true);
-		Records.text = "";
+		Records.text = "Recent Games \n";
 		for(int i = scores.Count-1; i >= 0; i--)
 		{
 			var item = scores.ElementAt(i);
@@ -284,6 +333,7 @@ public class box : MonoBehaviour {
 
 	public void RetryMenu() {
 		Records.gameObject.SetActive(false);
+		showOptions(false);
 		WinLose.gameObject.SetActive(false);
 		GameOverMenuButtons.gameObject.SetActive (false);
 		ShowHud(true);
@@ -296,13 +346,22 @@ public class box : MonoBehaviour {
 		state = States.Game;
 	}
 
-	private void MoveCameratoPlay() {
-		if (count++ < 60) {
-			Camera.main.transform.position += (ThirdPCamera - MenuCamera) / 60;
-		} else {
-			count = 0;
-			StartTime = Time.time;
-			state = States.Game;
-		}
+	public void OptionsMenu()
+	{
+		preState = state;
+		WinLose.gameObject.SetActive(false);
+		Logo.gameObject.SetActive(preState == States.FirstMenu);
+		GameOverMenuButtons.gameObject.SetActive(false);
+		MenuButtons.gameObject.SetActive(false);
+		ShowHud(false);
+		showOptions(true);
+		state = States.Options;
 	}
+
+	public void onBack()
+	{
+		showOptions(false);
+		state = preState;
+	}
+
 }
